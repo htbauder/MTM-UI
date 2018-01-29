@@ -68,16 +68,32 @@ export default class MusicAPI {
    * Get song information given an id
    */
   static getSongInfo = (id) => {
-    let requestUrl = BASE_URL + "/songs/" + id;
-
-    return axios.get(requestUrl)
+  	
+  	 let query = `SELECT DISTINCT ?duration ?url ?name ?artistName ?albumCoverImage ?albumRelease ?albumName 
+WHERE {
+	?Song a schema:MusicRecording;
+		billboard:id "${id}";
+		schema:duration ?duration;
+		schema:url ?url;
+		schema:name ?name;
+		schema:byArtist ?artist;
+		schema:inAlbum ?album.
+	?artist a schema:MusicGroup;
+		schema:name ?artistName.
+	?album a schema:MusicAlbum;
+		schema:image ?albumCoverImage;
+		schema:albumRelease ?albumRelease;
+		schema:name ?albumName
+}`;
+    let LRA_URL = "http://localhost:9000/api/lra/query?q=" + encodeURIComponent(query);
+    return axios.get(LRA_URL)
       .then(function (response) {
 
-        let result = response.data.data;
+        let result = response.data.table.row;
 
-        let song = new Song(id, result.name, result.artist,
-                    result.albumName, result.albumRelease, result.duration,
-                    result.url, result.image);
+        let song = new Song(result['?id'], result['?name'], result['?artist'],
+                    result['?albumName'], result['?albumRelease'], result['?duration'],
+                    result['?url'], result['?image']);
 
         return song;
 
